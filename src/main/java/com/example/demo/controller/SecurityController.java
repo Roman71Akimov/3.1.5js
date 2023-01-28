@@ -9,4 +9,10 @@ public class SecurityController {
     public String login() {
         return "login";
     }
+
+    @GetMapping("/admin")
+    public String getAdminPage(){return "admin";}
+
+    @GetMapping("/user")
+    public String getUserPage(){return "user";}
 }
