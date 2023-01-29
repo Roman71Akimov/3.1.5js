@@ -1,7 +1,7 @@
 package com.example.demo.admin;
 
-import com.example.demo.service.RoleService;
-import com.example.demo.service.UserService;
+import com.example.demo.services.RoleService;
+import com.example.demo.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.example.demo.model.User;
@@ -27,7 +27,7 @@ public class Admin {
         Role roleUser = new Role("ROLE_USER");
         roleService.saveRole(roleAdmin);
         roleService.saveRole(roleUser);
-        User admin = new User("admin", "admin", "admin@mail.ru", 12, "admin");
+        User admin = new User("admin", "admin", 12,"admin@mail.ru", "admin");
         admin.setRoles(Set.of(roleAdmin));
         usersService.saveUser(admin);
 

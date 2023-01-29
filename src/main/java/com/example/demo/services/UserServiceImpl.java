@@ -1,30 +1,28 @@
-package com.example.demo.service;
+package com.example.demo.services;
 
-import com.example.demo.repository.UserRepository;
+import com.example.demo.model.Role;
+import com.example.demo.model.User;
+import com.example.demo.repositories.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.example.demo.model.User;
 
+import javax.transaction.Transactional;
 import java.util.List;
+
 
 @Service
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RoleService roleService;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleService roleService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-    }
-
-    @Override
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email).orElseGet(User::new);
+        this.roleService = roleService;
     }
 
     @Override
@@ -33,8 +31,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getUserById(long id) {
-        return userRepository.getById(id);
+    public User getUser(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
     }
 
     @Override
@@ -48,21 +52,25 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void updateUser(User updateUser) {
         User user = userRepository.getById(updateUser.getId());
-        if(!user.getPassword().equals(updateUser.getPassword())) {
+        if (!user.getPassword().equals(updateUser.getPassword())) {
             updateUser.setPassword(passwordEncoder.encode(updateUser.getPassword()));
         }
         userRepository.save(updateUser);
     }
 
+
     @Override
-    @Transactional
-    public void deleteUserById(long id) {
-        userRepository.deleteById(id);
+    public User findByEmail(String email) {
+        return userRepository.findUserByEmail(email).orElseGet(User::new);
+    }
+
+    @Override
+    public List<Role> getAllRoles() {
+        return roleService.getAllRoles();
     }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Email not found!!"));
+        return userRepository.findUserByEmail(email).orElseThrow(() -> new IllegalArgumentException("Email not found!!"));
     }
 }

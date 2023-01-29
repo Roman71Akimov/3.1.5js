@@ -1,39 +1,39 @@
 package com.example.demo.configs;
 
-import org.springframework.beans.factory.annotation.Autowired;
+
+import com.example.demo.services.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
 
 @Configuration
 @EnableWebSecurity
+@EnableGlobalMethodSecurity(securedEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     private final SuccessUserHandler successUserHandler;
-    private final UserDetailsService usersService;
-@Autowired
-    public WebSecurityConfig(SuccessUserHandler successUserHandler,@Lazy UserDetailsService usersService) {
-        this.successUserHandler = successUserHandler;
-        this.usersService = usersService;
-    }
+    private final UserService detailsService;
 
-    //Настраиваем аутентификацию
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(usersService);
+
+    public WebSecurityConfig(SuccessUserHandler successUserHandler, @Lazy UserService detailsService) {
+        this.successUserHandler = successUserHandler;
+        this.detailsService = detailsService;
+
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+
+
         http.formLogin().loginPage("/login")
                 .successHandler(successUserHandler)
                 .loginProcessingUrl("/login")
@@ -49,15 +49,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .disable();
         http
                 .authorizeRequests()
-                .antMatchers("/login").anonymous()
-                .antMatchers("/admin/**")
-                .access("hasAnyAuthority('ROLE_ADMIN')")
-                .antMatchers("/user/**")
-                .access("hasAnyAuthority('ROLE_ADMIN', 'ROLE_USER')")
+                .antMatchers("/login").permitAll()
+                .antMatchers("/user").hasAnyRole("USER", "ADMIN")
+                .antMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated();
-    }
 
-    //Кодировка пароля
+    }
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -67,8 +64,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     public DaoAuthenticationProvider daoAuthenticationProvider() {
         DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
-        daoAuthenticationProvider.setUserDetailsService(usersService);
+        daoAuthenticationProvider.setUserDetailsService(detailsService);
         return daoAuthenticationProvider;
+    }
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(detailsService)
+                .passwordEncoder(passwordEncoder());
     }
 
 
